@@ -64,16 +64,3 @@ In this investigation, the following censuses are [defined](https://www.census.g
 - **Bachelor's Degree or Higher:** High Persons with a Bachelor's Degree or Higher are those who have received a bachelor's degree from a college or university, or a master's, professional, or doctorate degree. These data shown here include only persons 25 years old and over. The percentages are obtained by dividing the number of persons whose highest degree or level of school completed was bachelor's degree or higher  by the total number of persons 25 years old and over.
 
 _For a detailed definition of the data, please visit [U.S. Census Bureau QuickFacts: United States](https://www.census.gov/quickfacts/fact/table/US/PST045222)._
-
-<hr>
-
-<a id='questions'></a>
-
-
-### Question(s) for Analysis
-- <a href="#q1">What state has the highest gun sales in years 2010 & 2016?</a>
-- <a href="#q2">What state saw a significant increase in gun sales six years later?</a>
-- <a href="#q3">Are there disparities in firearm acquisitions among different racial groups?</a>
-- <a href="#q4">Does gender play a role in gun purchases?</a>
-- <a href="#q5">Is the veteran population pertinent to a state's firearm acquisitions?</a>
-- <a href="#q6">Is there a correlation between states with a greater disparity between the number of housing units and population and levels of gun sales?</a>
