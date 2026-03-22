@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gun Checks in America — A Data Investigation</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --ink: #0e0d0b;
+    --paper: #f5f0e8;
+    --accent: #c0392b;
+    --accent2: #d4a857;
+    --muted: #7a7060;
+    --rule: #c8bfad;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    overflow-x: hidden;
+  }
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Crect width='4' height='4' fill='%23f5f0e8'/%3E%3Ccircle cx='1' cy='1' r='0.35' fill='%23e0d8c8' opacity='0.6'/%3E%3C/svg%3E");
+    pointer-events: none; z-index: 0;
+  }
+  .masthead {
+    border-bottom: 3px double var(--ink);
+    padding: 14px 0 10px;
+    text-align: center;
+    position: relative; z-index: 1;
+  }
+  .masthead-meta {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px; letter-spacing: 2px;
+    text-transform: uppercase; color: var(--muted);
+    margin-bottom: 8px;
+  }
+  .masthead-title {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(38px, 7vw, 78px);
+    font-weight: 900; line-height: 1; letter-spacing: -2px;
+  }
+  .masthead-title span { color: var(--accent); }
+  .masthead-sub {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px; letter-spacing: 1.5px;
+    text-transform: uppercase; color: var(--muted);
+    margin-top: 10px;
+    border-top: 1px solid var(--rule); padding-top: 10px;
+  }
+  .ticker {
+    background: var(--accent); color: white;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px; letter-spacing: 1px;
+    padding: 6px 0; overflow: hidden;
+    white-space: nowrap; position: relative; z-index: 1;
+  }
+  .ticker-inner { display: inline-block; animation: ticker 30s linear infinite; }
+  @keyframes ticker { 0% { transform: translateX(100vw); } 100% { transform: translateX(-100%); } }
+  .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+  .hero { padding: 48px 0 36px; border-bottom: 2px solid var(--ink); }
+  .hero-grid { display: grid; grid-template-columns: 1.6fr 1fr; gap: 48px; align-items: start; }
+  .hero-headline h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(28px, 4vw, 54px);
+    font-weight: 900; line-height: 1.07; letter-spacing: -0.5px;
+  }
+  .hero-headline h1 em { font-style: italic; color: var(--accent); }
+  .hero-byline {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px; letter-spacing: 1.5px;
+    color: var(--muted); margin-top: 14px; text-transform: uppercase;
+  }
+  .hero-lede { font-size: 15.5px; line-height: 1.75; margin-top: 16px; color: #2a2820; }
+  .hero-stat-col {
+    border-left: 1px solid var(--rule); padding-left: 36px;
+    display: flex; flex-direction: column; gap: 28px; justify-content: center;
+  }
+  .hero-stat { border-left: 3px solid var(--accent); padding-left: 14px; }
+  .hero-stat-num {
+    font-family: 'Playfair Display', serif;
+    font-size: 42px; font-weight: 900; line-height: 1; color: var(--accent);
+  }
+  .hero-stat-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px; letter-spacing: 1.5px;
+    text-transform: uppercase; color: var(--muted); margin-top: 5px;
+  }
+  .section-rule {
+    display: flex; align-items: center; gap: 12px; margin: 44px 0 24px;
+  }
+  .section-rule::after { content: ''; flex: 1; height: 1px; background: var(--rule); }
+  .section-rule span {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px; letter-spacing: 3px;
+    text-transform: uppercase; color: var(--muted); white-space: nowrap;
+  }
+  .findings-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 1px; background: var(--rule); border: 1px solid var(--rule); margin-bottom: 44px;
+  }
+  .finding-card { background: var(--paper); padding: 26px 22px; position: relative; overflow: hidden; }
+  .finding-card::before {
+    content: attr(data-num);
+    position: absolute; top: -10px; right: 12px;
+    font-family: 'Playfair Display', serif; font-size: 88px; font-weight: 900;
+    color: rgba(200,191,173,0.4); line-height: 1; pointer-events: none;
+  }
+  .finding-tag {
+    display: inline-block; font-family: 'DM Mono', monospace;
+    font-size: 9px; letter-spacing: 2px; text-transform: uppercase;
+    background: var(--accent); color: white; padding: 2px 9px; margin-bottom: 10px;
+  }
+  .finding-card h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 18px; font-weight: 700; line-height: 1.3; margin-bottom: 10px;
+  }
+  .finding-card p { font-size: 13.5px; line-height: 1.65; color: #3a3828; }
+  .stat-inline {
+    font-family: 'Playfair Display', serif;
+    font-size: 28px; font-weight: 900; color: var(--accent);
+    display: block; margin: 8px 0 6px;
+  }
+  .pullquote {
+    border-top: 4px solid var(--ink); border-bottom: 1px solid var(--rule);
+    padding: 30px 0; margin: 44px 0; text-align: center;
+  }
+  .pullquote p {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(22px, 2.8vw, 34px);
+    font-style: italic; font-weight: 700; line-height: 1.3;
+    max-width: 720px; margin: 0 auto;
+  }
+  .pullquote p em { color: var(--accent); font-style: normal; }
+  .pullquote cite {
+    display: block; font-family: 'DM Mono', monospace;
+    font-size: 10px; letter-spacing: 1.5px;
+    color: var(--muted); text-transform: uppercase; margin-top: 12px;
+  }
+  .chart-box { border: 1px solid var(--rule); padding: 26px; background: white; margin-bottom: 32px; }
+  .charts-two { display: grid; grid-template-columns: 1.8fr 1fr; gap: 24px; margin-bottom: 32px; }
+  .charts-two .chart-box { margin-bottom: 0; }
+  .chart-label { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+  .chart-title { font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 700; margin-bottom: 20px; line-height: 1.2; }
+  .chart-note { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); margin-top: 10px; letter-spacing: 0.5px; }
+  .state-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .state-table thead tr { border-bottom: 2px solid var(--ink); }
+  .state-table th { font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); padding: 8px 10px; text-align: left; }
+  .state-table td { padding: 9px 10px; border-bottom: 1px solid var(--rule); }
+  .state-table tr:hover td { background: #ede8de; }
+  .rank-num { font-family: 'DM Mono', monospace; color: var(--muted); font-size: 11px; }
+  .check-count { font-family: 'DM Mono', monospace; font-size: 12px; }
+  .mini-bar { height: 8px; background: linear-gradient(90deg, var(--accent), var(--accent2)); border-radius: 1px; }
+  .state-note { font-size: 10px; color: var(--muted); font-family: 'DM Mono', monospace; }
+  .qa-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--rule); border: 1px solid var(--rule); margin-bottom: 44px; }
+  .qa-card { background: var(--paper); padding: 26px 22px; }
+  .qa-q { font-family: 'Playfair Display', serif; font-size: 17px; font-weight: 700; line-height: 1.3; margin-bottom: 10px; color: var(--accent); }
+  .qa-a { font-size: 13.5px; line-height: 1.65; color: #3a3828; }
+  .qa-a strong { font-weight: 500; color: var(--ink); }
+  .methodology { background: var(--ink); color: var(--paper); padding: 32px; margin: 44px 0; }
+  .methodology h4 { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: var(--accent2); margin-bottom: 12px; }
+  .methodology p { font-size: 13.5px; line-height: 1.75; color: #c8bfad; }
+  .tools-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 18px; }
+  .tool-badge { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; border: 1px solid #555; color: #c8bfad; padding: 4px 10px; }
+  .footer { border-top: 3px double var(--ink); padding: 22px 0; text-align: center; }
+  .footer p { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 1.5px; color: var(--muted); text-transform: uppercase; }
+  .footer a { color: var(--accent); text-decoration: none; border-bottom: 1px solid var(--accent); }
+  .fade-in { opacity: 0; transform: translateY(18px); transition: opacity 0.6s ease, transform 0.6s ease; }
+  @media (max-width: 768px) {
+    .hero-grid, .findings-grid, .charts-two, .qa-grid { grid-template-columns: 1fr; }
+    .hero-stat-col { border-left: none; border-top: 1px solid var(--rule); padding-left: 0; padding-top: 28px; flex-direction: row; flex-wrap: wrap; gap: 20px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="masthead">
+  <div class="container">
+    <div class="masthead-meta">Data Investigation · FBI NICS · U.S. Census Bureau · 1998–2017</div>
+    <div class="masthead-title">GUN CHECKS <span>IN AMERICA</span></div>
+    <div class="masthead-sub">Analyzing Federal Firearm Background Check Data Against U.S. Demographics &nbsp;·&nbsp; Python &amp; Pandas &nbsp;·&nbsp; By Omar Khas</div>
+  </div>
+</div>
+
+<div class="ticker">
+  <span class="ticker-inner">
+    &nbsp;&nbsp;&nbsp; KENTUCKY LEADS ALL 50 STATES WITH 29.7M TOTAL CHECKS &nbsp;·&nbsp; DECEMBER IS THE BUSIEST MONTH EVERY YEAR — 29,025 AVG CHECKS &nbsp;·&nbsp; HANDGUNS OVERTOOK LONG GUNS IN 2014 AND NEVER LOOKED BACK &nbsp;·&nbsp; 2016 BROKE ALL RECORDS WITH 27.4 MILLION CHECKS &nbsp;·&nbsp; HAWAII HAD THE FEWEST CHECKS IN 2016 — JUST 1,565 &nbsp;·&nbsp; VETERAN POPULATION SHOWS 0.52 CORRELATION WITH GUN SALES &nbsp;·&nbsp; CHECKS ≠ SALES: 12,485 ROWS · 27 COLUMNS · 50 STATES &nbsp;&nbsp;&nbsp;
+  </span>
+</div>
+
+<div class="container">
+
+  <div class="hero fade-in">
+    <div class="hero-grid">
+      <div class="hero-headline">
+        <h1>Every gun purchase<br>starts with a <em>phone call</em><br>to the FBI.</h1>
+        <div class="hero-byline">By Omar Khas &nbsp;·&nbsp; Python / Pandas / Matplotlib / Seaborn &nbsp;·&nbsp; FBI NICS + U.S. Census Bureau</div>
+        <p class="hero-lede">Since 1998, the National Instant Criminal Background Check System has screened firearm transactions across all 50 states. This investigation cross-references 12,485 NICS records with U.S. Census data to ask: who buys guns, where, when — and why do the numbers keep climbing?</p>
+      </div>
+      <div class="hero-stat-col">
+        <div class="hero-stat">
+          <div class="hero-stat-num">27.4M</div>
+          <div class="hero-stat-label">Checks in 2016 — record high</div>
+        </div>
+        <div class="hero-stat">
+          <div class="hero-stat-num">+205%</div>
+          <div class="hero-stat-label">Growth from 2008 to 2016</div>
+        </div>
+        <div class="hero-stat">
+          <div class="hero-stat-num">0.52</div>
+          <div class="hero-stat-label">Veteran population correlation</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-rule"><span>The Big Picture</span></div>
+  <div class="chart-box fade-in">
+    <div class="chart-label">Figure 01 · Annual Volume (real data from notebook)</div>
+    <div class="chart-title">Background Check Volume Has Tripled Since 2008</div>
+    <canvas id="trendChart" height="75"></canvas>
+    <p class="chart-note">* 2017 data covers Jan–Sep only. Red bars mark the post-2008 surge period.</p>
+  </div>
+
+  <div class="section-rule"><span>Key Findings</span></div>
+  <div class="findings-grid fade-in">
+    <div class="finding-card" data-num="1">
+      <div class="finding-tag">Geographic</div>
+      <h3>Kentucky dominated — in every year</h3>
+      <span class="stat-inline">29.7M total</span>
+      <p>Kentucky topped every other state in both 2010 (211,261 checks) and 2016 (363,085 checks). Confirmed using <code>idxmax()</code> on the merged dataset. The gap is partly explained by a state policy of re-running NICS checks on existing permit holders every month — significantly inflating raw totals vs. other states.</p>
+    </div>
+    <div class="finding-card" data-num="2">
+      <div class="finding-tag">Seasonal</div>
+      <h3>December is always the busiest month</h3>
+      <span class="stat-inline">29,025 avg</span>
+      <p>December averaged 29,025 checks per state — the highest of any month in the dataset. This is nearly 60% more than the April low (18,112). The pattern holds consistently across all years, pointing to holiday gift-buying and year-end permit windows as the primary drivers.</p>
+    </div>
+    <div class="finding-card" data-num="3">
+      <div class="finding-tag">Demographic</div>
+      <h3>Female populations slightly higher in top-sales states</h3>
+      <span class="stat-inline">50.7% ♀ KY</span>
+      <p>Kentucky (highest sales, 2016) was 50.7% female. Hawaii (lowest sales, 1,565 checks) was 49.8% female. The notebook's pie charts reveal that in both 2010 and 2016, states with the most checks had slightly higher female percentages — though no causal claim can be made without deeper analysis.</p>
+    </div>
+  </div>
+
+  <div class="pullquote fade-in">
+    <p>"These numbers count <em>questions asked,</em> not guns sold — and that distinction changes everything about what we can conclude."</p>
+    <cite>From the project conclusions · Omar Khas</cite>
+  </div>
+
+  <div class="charts-two fade-in">
+    <div class="chart-box">
+      <div class="chart-label">Figure 02 · Real monthly averages from dataset</div>
+      <div class="chart-title">Monthly Average Checks — December Peaks Every Year</div>
+      <canvas id="monthChart" height="170"></canvas>
+    </div>
+    <div class="chart-box">
+      <div class="chart-label">Figure 03 · Column breakdown</div>
+      <div class="chart-title">What Kind of Checks Are Filed?</div>
+      <canvas id="typeChart" height="170"></canvas>
+    </div>
+  </div>
+
+  <div class="chart-box fade-in">
+    <div class="chart-label">Figure 04 · Handgun vs Long Gun — real data 1999–2016</div>
+    <div class="chart-title">Handguns Overtook Long Guns in 2014 — and the Gap Kept Growing</div>
+    <canvas id="gunTypeChart" height="80"></canvas>
+    <p class="chart-note">A structural crossover: long guns led from 1999–2013. Handguns took over in 2014 and reached 8.1M vs 6.0M in 2016.</p>
+  </div>
+
+  <div class="section-rule"><span>State Breakdown</span></div>
+  <div class="chart-box fade-in">
+    <div class="chart-label">Figure 05 · Real totals from 1998–2017 gun_data.xlsx</div>
+    <div class="chart-title">Top 10 States by All-Time Background Check Volume</div>
+    <table class="state-table">
+      <thead>
+        <tr><th>#</th><th>State</th><th>Total Checks</th><th style="width:220px">Relative Volume</th></tr>
+      </thead>
+      <tbody id="stateBody"></tbody>
+    </table>
+  </div>
+
+  <div class="section-rule"><span>Research Questions Answered</span></div>
+  <div class="qa-grid fade-in">
+    <div class="qa-card">
+      <div class="qa-q">Q1: Which state had the highest gun sales in 2010 and 2016?</div>
+      <div class="qa-a"><strong>Kentucky in both years.</strong> In April 2010: 211,261 total checks. In July 2016: 363,085 — a 72% increase. Confirmed using <code>idxmax()</code> on the merged gun + census DataFrame. Even accounting for Kentucky's permit-recheck policy, no other state comes close.</div>
+    </div>
+    <div class="qa-card">
+      <div class="qa-q">Q2: Which state saw the biggest increase 2010–2016?</div>
+      <div class="qa-a"><strong>Kentucky again</strong> — with the largest absolute difference when plotting <code>totals_16 - totals_10</code> for all states. Notably, <strong>Utah</strong> experienced the most significant decrease over the same period, suggesting state-level policy changes rather than a uniform national trend.</div>
+    </div>
+    <div class="qa-card">
+      <div class="qa-q">Q3: Is there a racial pattern in firearm acquisition across states?</div>
+      <div class="qa-a">Waffle chart analysis showed that <strong>Kentucky (88% White population)</strong> had the highest checks, while <strong>Hawaii (25.8% White, 37.7% Asian)</strong> had the lowest (1,565 in 2016). The pattern shows correlation — but not causation. Many other factors (rural vs urban, policy, culture) likely explain the disparity.</div>
+    </div>
+    <div class="qa-card">
+      <div class="qa-q">Q4: Does veteran population correlate with gun sales?</div>
+      <div class="qa-a">A scatter plot across all 50 states for 2011–2015 showed a <strong>positive correlation of 0.52</strong> between veteran population and firearm background checks. This is a moderately strong signal computed using <code>np.corrcoef()</code>. States with more veterans tend to have more checks, though causality was not established.</div>
+    </div>
+  </div>
+
+  <div class="methodology fade-in">
+    <h4>Methodology & Limitations</h4>
+    <p>Two datasets were used: FBI NICS monthly records (1998–2017, 12,485 rows × 27 columns) and U.S. Census Bureau data (50 states, estimates for 2010, 2011–2015, and 2016). The gun data had significant NaN values — permit_recheck alone had 11,385 missing rows — handled using forward-fill. Census data required transposing (rows were states, columns were facts), stripping commas and % signs from strings, and converting to numeric types. Cross-referencing used inner joins on state names. Visualizations included bar charts, scatter plots, pie charts, and PyWaffle waffle charts. <strong>Key caveat from the conclusions:</strong> background checks ≠ firearms sold. A single check can cover multiple firearms, and some states re-run checks on existing permit holders monthly, inflating totals. Further data (median salary, education per racial group, economic status of veteran populations) would be needed for more conclusive findings.</p>
+    <div class="tools-row">
+      <span class="tool-badge">Python</span>
+      <span class="tool-badge">Pandas</span>
+      <span class="tool-badge">Matplotlib</span>
+      <span class="tool-badge">Seaborn</span>
+      <span class="tool-badge">PyWaffle</span>
+      <span class="tool-badge">NumPy</span>
+      <span class="tool-badge">Jupyter Notebook</span>
+      <span class="tool-badge">FBI NICS</span>
+      <span class="tool-badge">U.S. Census Bureau</span>
+    </div>
+  </div>
+
+</div>
+
+<div class="footer">
+  <div class="container">
+    <p>Full source code, notebook &amp; datasets on &nbsp;<a href="https://github.com/Omar-Khas/Investigating-FBI-NICS-Firearm-Background-Check-Data" target="_blank">GitHub → Omar-Khas</a> &nbsp;·&nbsp; Data: FBI NICS &amp; U.S. Census Bureau</p>
+  </div>
+</div>
+
+<script>
+const accent = '#c0392b', accent2 = '#d4a857', muted = '#a09880', paper = '#f5f0e8';
+Chart.defaults.font.family = "'DM Mono', monospace";
+Chart.defaults.color = muted;
+
+// Real annual data
+const years = [1999,2000,2001,2002,2003,2004,2005,2006,2007,2008,2009,2010,2011,2012,2013,2014,2015,2016];
+const annualM = [9.08,8.45,8.83,8.37,8.41,8.59,8.88,10.10,11.16,12.69,13.99,14.32,16.34,19.46,20.97,20.86,23.03,27.43];
+new Chart(document.getElementById('trendChart'), {
+  type: 'bar',
+  data: {
+    labels: years,
+    datasets: [{ label: 'Million Checks', data: annualM,
+      backgroundColor: annualM.map((v,i) => i >= 9 ? accent : '#c8bfad'), borderWidth: 0 }]
+  },
+  options: { responsive: true,
+    plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` ${ctx.parsed.y.toFixed(2)}M checks` } } },
+    scales: { x: { grid: { display: false }, ticks: { font: { size: 10 } } }, y: { grid: { color: '#ede8de' }, ticks: { callback: v => v + 'M', font: { size: 10 } } } }
+  }
+});
+
+// Real monthly averages (in thousands)
+const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const monthData = [21.6,23.3,24.3,20.4,18.1,17.8,17.9,20.0,20.8,22.7,23.4,29.0];
+new Chart(document.getElementById('monthChart'), {
+  type: 'line',
+  data: { labels: months, datasets: [{
+    label: 'Avg Checks (thousands)', data: monthData,
+    borderColor: accent, backgroundColor: 'rgba(192,57,43,0.07)',
+    borderWidth: 2.5,
+    pointBackgroundColor: months.map((m,i) => i === 11 ? accent : paper),
+    pointBorderColor: accent,
+    pointRadius: months.map((m,i) => i === 11 ? 7 : 4),
+    tension: 0.35, fill: true
+  }]},
+  options: { responsive: true,
+    plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` ${ctx.parsed.y}K avg` } } },
+    scales: { x: { grid: { display: false } }, y: { grid: { color: '#ede8de' }, ticks: { callback: v => v + 'K' } } }
+  }
+});
+
+new Chart(document.getElementById('typeChart'), {
+  type: 'doughnut',
+  data: { labels: ['Permit', 'Handgun', 'Long Gun', 'Other / Multiple'],
+    datasets: [{ data: [34, 30, 24, 12], backgroundColor: [accent, '#d4a857', '#8a7f6a', '#c8bfad'], borderWidth: 0, hoverOffset: 6 }] },
+  options: { responsive: true, cutout: '62%',
+    plugins: { legend: { position: 'bottom', labels: { font: { size: 10 }, padding: 12, boxWidth: 12 } },
+      tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ~${ctx.parsed}%` } } }
+  }
+});
+
+// Real handgun vs long gun data
+const gunYears = [1999,2000,2001,2002,2003,2004,2005,2006,2007,2008,2009,2010,2011,2012,2013,2014,2015,2016];
+const handgunM = [2.54,2.19,2.17,1.85,1.85,1.99,2.25,2.44,2.64,3.33,3.69,3.68,4.30,5.68,6.39,6.20,7.33,8.09];
+const longunM  = [5.23,4.78,4.94,4.41,4.38,4.51,4.59,4.79,4.57,4.91,4.98,4.84,5.45,6.87,7.13,5.54,5.48,5.99];
+new Chart(document.getElementById('gunTypeChart'), {
+  type: 'line',
+  data: { labels: gunYears, datasets: [
+    { label: 'Handgun', data: handgunM, borderColor: accent, backgroundColor: 'transparent', borderWidth: 2.5, pointRadius: 4, tension: 0.3 },
+    { label: 'Long Gun', data: longunM, borderColor: accent2, backgroundColor: 'transparent', borderWidth: 2.5, pointRadius: 4, tension: 0.3, borderDash: [5,3] }
+  ]},
+  options: { responsive: true,
+    plugins: { legend: { position: 'top', labels: { font: { size: 11 }, boxWidth: 20 } }, tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y.toFixed(2)}M` } } },
+    scales: { x: { grid: { display: false } }, y: { grid: { color: '#ede8de' }, ticks: { callback: v => v + 'M' } } }
+  }
+});
+
+// Real state data from gun_data.xlsx
+const states = [
+  { name: 'Kentucky', checks: 29763598, note: '* monthly permit rechecks' },
+  { name: 'Texas', checks: 19436350, note: '' },
+  { name: 'California', checks: 19015227, note: '' },
+  { name: 'Illinois', checks: 15472698, note: '' },
+  { name: 'Pennsylvania', checks: 13135040, note: '' },
+  { name: 'Florida', checks: 11696941, note: '' },
+  { name: 'North Carolina', checks: 7778853, note: '' },
+  { name: 'Indiana', checks: 7738336, note: '' },
+  { name: 'Ohio', checks: 8463908, note: '' },
+  { name: 'Tennessee', checks: 7312459, note: '' },
+];
+const maxChecks = states[0].checks;
+const tbody = document.getElementById('stateBody');
+states.forEach((s, i) => {
+  const pct = Math.round((s.checks / maxChecks) * 100);
+  const fmt = (s.checks / 1e6).toFixed(1) + 'M';
+  tbody.innerHTML += `<tr>
+    <td class="rank-num">${String(i+1).padStart(2,'0')}</td>
+    <td>${s.name} ${s.note ? '<span class="state-note">' + s.note + '</span>' : ''}</td>
+    <td class="check-count">${fmt}</td>
+    <td><div class="mini-bar" style="width:${pct}%"></div></td>
+  </tr>`;
+});
+
+const io = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) { e.target.style.opacity = '1'; e.target.style.transform = 'translateY(0)'; io.unobserve(e.target); }
+  });
+}, { threshold: 0.08 });
+document.querySelectorAll('.fade-in').forEach(el => io.observe(el));
+</script>
+</body>
+</html>
